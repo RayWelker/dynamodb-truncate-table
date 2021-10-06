@@ -15,25 +15,26 @@ def truncateTable(tableName):
     counter = 0
     page = table.scan(ProjectionExpression=projectionExpression, ExpressionAttributeNames=expressionAttrNames)
     with table.batch_writer() as batch:
-        while page["Count"] > 0:
-            counter += page["Count"]
-            reply = str(input(f'{counter} will be deleted for table {tableName} (y/n): ')).lower().strip()
-            if reply[:1] == 'y':
+        reply = str(input(f'All items will be deleted for table {tableName} (y/n): ')).lower().strip()
+        if reply[:1] == 'y':
+            while page["Count"] > 0:
+                counter += page["Count"]
                 # Delete items in batches
                 for itemKeys in page["Items"]:
                     batch.delete_item(Key=itemKeys)
-                # Fetch the next page
+                    # Fetch the next page
                 if 'LastEvaluatedKey' in page:
                     page = table.scan(
                         ProjectionExpression=projectionExpression, ExpressionAttributeNames=expressionAttrNames,
                         ExclusiveStartKey=page['LastEvaluatedKey'])
                 else:
                     break
-            if reply[:1] == 'n':
-                exit()
+        else:
+            exit()
     print(f"Deleted {counter}")
             
 parser = argparse.ArgumentParser(description='DynamoDB Drop all items in table.')
 parser.add_argument('-t', '--table', help='The name of the table', required=True)
 args = parser.parse_args()
+
 truncateTable(args.table)
